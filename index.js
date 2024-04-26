@@ -38,13 +38,24 @@ async function run() {
             const result = await cursor.toArray();
             res.send(result);
         })
-       
+
         app.get('/arts/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
             const result = await infoCollections.findOne(query);
             res.send(result);
         })
+       
+        app.get('/myArt/:email', async (req, res) => {
+            const userEmail = req.params.email;
+            const query = { user_email: userEmail };
+            const cursor = infoCollections.find(query);
+            const result = await cursor.toArray();
+            res.send(result);
+        });
+      
+        
+
         // post
         app.post('/arts', async (req, res) => {
             const info = req.body;
