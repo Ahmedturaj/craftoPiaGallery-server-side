@@ -45,7 +45,7 @@ async function run() {
             const result = await infoCollections.findOne(query);
             res.send(result);
         })
-       
+    //    get data by email
         app.get('/myArt/:email', async (req, res) => {
             const userEmail = req.params.email;
             const query = { user_email: userEmail };
