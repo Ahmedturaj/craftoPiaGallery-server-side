@@ -32,6 +32,13 @@ async function run() {
         // Send a ping to confirm a successful connection
         // await client.db("admin").command({ ping: 1 });
         const infoCollections = client.db("craftopia").collection("craftopia");
+        app.get('/arts', async (req, res) => {
+            const cursor = infoCollections.find();
+            const result = await cursor.toArray();
+            res.send(result);
+        })
+
+        // post
         app.post('/arts', async (req, res) => {
             const info = req.body;
             const result = await infoCollections.insertOne(info)
