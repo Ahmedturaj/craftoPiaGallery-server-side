@@ -45,7 +45,7 @@ async function run() {
             const result = await infoCollections.findOne(query);
             res.send(result);
         })
-    //    get data by email
+        //    get data by email
         app.get('/myArt/:email', async (req, res) => {
             const userEmail = req.params.email;
             const query = { user_email: userEmail };
@@ -53,14 +53,38 @@ async function run() {
             const result = await cursor.toArray();
             res.send(result);
         });
-      
-        
+
 
         // post
         app.post('/arts', async (req, res) => {
             const info = req.body;
             const result = await infoCollections.insertOne(info)
             res.send(result)
+        })
+
+        // put
+
+        app.put('/arts/:id', async (req, res) => {
+            const id = req.params.id;
+            const info = req.body;
+            console.log(id, info);
+
+            const filter = { _id: new ObjectId(id) }
+            const options = { upsert: true }
+            const updatedUser = {
+                $set: {
+                    image: info.image,
+                    item_name: info.item_name,
+                    subcategory_name: info.subcategory_name, short_description: info.short_description, price: info.price,
+                    rating: info.rating,
+                    customization: info.customization, processing_time: info.processing_time, stock_status: info.stock_status, user_email: info.user_email,
+                    user_name: info.user_name
+                }
+            }
+
+            const result = await infoCollections.updateOne(filter, updatedUser, options);
+            res.send(result);
+
         })
 
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
