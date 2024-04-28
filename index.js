@@ -33,6 +33,7 @@ async function run() {
         // await client.db("admin").command({ ping: 1 });
         const infoCollections = client.db("craftopia").collection("craftopia");
         const userCollections = client.db("subscribeUser").collection("subscribeUser");
+        const categoryCollections = client.db("cardCategories").collection("cardCategories");
 
         // get
         app.get('/arts', async (req, res) => {
@@ -111,6 +112,23 @@ async function run() {
             const result = await cursor.toArray();
             res.send(result);
         })
+
+        //    get User data by email
+        app.get('/users/:email', async (req, res) => {
+            const userEmail = req.params.email;
+            const query = { email: userEmail };
+            const cursor = userCollections.find(query);
+            const result = await cursor.toArray();
+            res.send(result);
+        });
+
+        // cardCategories
+        app.get('/categories', async (req, res) => {
+            const cursor = categoryCollections.find();
+            const result = await cursor.toArray();
+            res.send(result);
+        })
+
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
         // Ensures that the client will close when you finish/error
