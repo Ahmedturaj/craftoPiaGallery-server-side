@@ -1,17 +1,19 @@
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser')
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config()
 const app = express();
 const port = process.env.PORT || 5000
 // middleware
-app.use(cors());
 app.use(cors({
-    origin: ["http://localhost:5173", "https://craftopia-gallery-client-side.web.app"],
+    origin: ['http://localhost:5173', 'https://craftopia-gallery-client-side.web.app'],
     credentials: true,
 })
 )
 app.use(express.json());
+app.use(cookieParser());
 
 
 
@@ -25,6 +27,31 @@ const client = new MongoClient(uri, {
         deprecationErrors: true,
     }
 });
+
+// middleware
+const logger = (req, res, next) => {
+    console.log('logged info :', req.method, req.url);
+    next();
+}
+
+
+
+const verifyToken = (req, res, next) => {
+    const token = req.cookies?.token;
+    console.log(token);
+    if (!token) {
+        return res.status(401).send({ message: 'unauthorized access' })
+    }
+    jwt.verify(token, process.env.ACCESS_USER_TOKEN, (err, decoded) => {
+        if (err) {
+            return res.status(401).send({ message: 'unauthorized access-2' })
+        }
+        req.user = decoded;
+        next();
+    })
+}
+
+
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
@@ -35,6 +62,24 @@ async function run() {
         const userCollections = client.db("subscribeUser").collection("subscribeUser");
         const categoryCollections = client.db("cardCategories").collection("cardCategories");
 
+        // jwt
+        app.post('/jwt', logger, async (req, res) => {
+            const user = req.body
+            console.log('user for token ', req.body);
+            const token = jwt.sign(user, process.env.ACCESS_USER_TOKEN, { expiresIn: '1h' });
+            res.cookie('token', token, {
+                httpOnly: true,
+                secure: true,
+                sameSite: 'strict'
+            })
+                .send({ success: true });
+        })
+
+        // logOut
+        app.post('/logOut', async (req, res) => {
+            const user = req.body;
+            res.clearCookie('token', { maxAge: 0 }).send({ success: true })
+        })
         // get
         app.get('/arts', async (req, res) => {
             const cursor = infoCollections.find();
@@ -42,14 +87,18 @@ async function run() {
             res.send(result);
         })
 
-        app.get('/arts/:id', async (req, res) => {
+        app.get('/arts/:id', logger, async (req, res) => {
+
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
             const result = await infoCollections.findOne(query);
             res.send(result);
         })
         //    get data by email
-        app.get('/myArt/:email', async (req, res) => {
+        app.get('/myArt/:email', logger, verifyToken, async (req, res) => {
+            if (req.params.email !== req.user.email) {
+                return res.status(403).send({ message: 'Forbidden access' })
+            }
             const userEmail = req.params.email;
             const query = { user_email: userEmail };
             const cursor = infoCollections.find(query);
@@ -67,7 +116,8 @@ async function run() {
 
         // put
 
-        app.put('/arts/:id', async (req, res) => {
+        app.put('/arts/:id', logger, async (req, res) => {
+
             const id = req.params.id;
             const info = req.body;
             console.log(id, info);
@@ -92,6 +142,7 @@ async function run() {
 
         // delete
         app.delete('/arts/:id', async (req, res) => {
+
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
             const result = await infoCollections.deleteOne(query)
@@ -121,7 +172,8 @@ async function run() {
             res.send(result);
         })
         // cardCategories subcategory_name
-        app.get('/categories/:subcategory_name', async (req, res) => {
+        app.get('/categories/:subcategory_name', logger, async (req, res) => {
+
             const category = req.params.subcategory_name;
             const query = { subcategory_name: category };
             const cursor = categoryCollections.find(query);
@@ -130,7 +182,8 @@ async function run() {
         });
         // 
 
-        app.get('/category/:id', async (req, res) => {
+        app.get('/category/:id', logger, async (req, res) => {
+
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
             const result = await categoryCollections.findOne(query);
