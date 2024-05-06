@@ -8,7 +8,7 @@ const app = express();
 const port = process.env.PORT || 5000
 // middleware
 app.use(cors({
-    origin: ['https://craftopia-gallery-client-side.web.app','http://localhost:5173'],
+    origin: ['https://craftopia-gallery-client-side.web.app', 'http://localhost:5173'],
     credentials: true,
 })
 )
@@ -69,8 +69,8 @@ async function run() {
             const token = jwt.sign(user, process.env.ACCESS_USER_TOKEN, { expiresIn: '1y' });
             res.cookie('token', token, {
                 httpOnly: true,
-                secure: true,
-                sameSite: 'strict'
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
             })
                 .send({ success: true });
         })
